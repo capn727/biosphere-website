@@ -82,7 +82,7 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
     /* ── NAV ── */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10020; display: flex; align-items: center; justify-content: space-between; padding: 16px 48px; background: rgba(255,255,255,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(1,46,84,0.06); transition: background 0.3s; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10020; display: flex; align-items: center; justify-content: space-between; padding: 16px 48px; background: #ffffff; border-bottom: 1px solid rgba(1,46,84,0.06); }
     .nav-logo-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; }
     .nav-logo-img { height: 42px; width: auto; transition: opacity 0.2s; display: block; }
     .nav-logo-btn:hover .nav-logo-img { opacity: 0.8; }
@@ -134,11 +134,13 @@
 
     /* ── MASONRY ── */
     .masonry { position: relative; padding: 0; }
-    .masonry-item { width: calc(33.333% - 3px); margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
+    .masonry-item { width: 33.1%; margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
+    .masonry-item .img-wrap { width: 100%; background: var(--cream); }
     .masonry-item .img-wrap img { width: 100%; display: block; object-fit: contain; }
     .photo-masonry { position: relative; padding: 0 0 80px; }
-    .photo-masonry-item { width: calc(33.333% - 3px); margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
-    .photo-masonry-item .img-wrap img { width: 100%; display: block; }
+    .photo-masonry-item { width: 33.1%; margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
+    .photo-masonry-item .img-wrap { width: 100%; background: var(--cream); }
+    .photo-masonry-item .img-wrap img { width: 100%; display: block; object-fit: contain; }
 
     /* ── VIDEO ── */
     .video-list { padding: 0 48px 80px; display: flex; flex-direction: column; gap: 80px; }
@@ -231,20 +233,20 @@
     .lightbox-prev { left: 32px; } .lightbox-next { right: 32px; }
 
     /* ── BACK TO TOP ── */
-    .back-to-top { position: fixed; bottom: 36px; right: 36px; z-index: 10010; width: 40px; height: 40px; background: var(--dark); border: 1px solid rgba(255,255,255,0.15); color: white; font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; transform: translateY(8px); }
+    .back-to-top { position: fixed; bottom: 36px; right: 36px; z-index: 10010; width: 40px; height: 40px; background: white; border: 1px solid rgba(1,46,84,0.15); color: var(--dark); font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s, background 0.2s; transform: translateY(8px); }
     .back-to-top.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-    .back-to-top:hover { background: rgba(1,46,84,0.8); }
+    .back-to-top:hover { background: var(--cream); }
 
     /* ── MOBILE ── */
     @media (max-width: 1024px) {
-      .masonry-item { width: calc(50% - 2px); }
-      .photo-masonry-item { width: calc(50% - 2px); }
+      .masonry-item { width: 49.7%; }
+      .photo-masonry-item { width: 49.7%; }
     }
     @media (max-width: 768px) {
       nav { padding: 14px 24px; } .nav-links { gap: 16px; } .nav-links a { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
       .masonry { padding: 0; } .photo-masonry { padding: 0 0 60px; }
-      .masonry-item { width: calc(50% - 2px); } .photo-masonry-item { width: calc(50% - 2px); }
+      .masonry-item { width: 49.7%; } .photo-masonry-item { width: 49.7%; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
