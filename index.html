@@ -7,8 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.2.2/masonry.pkgd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/5.0.0/imagesloaded.pkgd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @font-face { font-family: 'Prima'; src: url('prima.ttf') format('truetype'); font-weight: normal; font-style: normal; }
@@ -133,13 +131,13 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { position: relative; padding: 0; }
-    .masonry-item { width: 33.1%; margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
-    .masonry-item .img-wrap { width: 100%; background: var(--cream); }
+    .masonry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 0 0 80px; }
+    .masonry-item { overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
+    .masonry-item .img-wrap { width: 100%; }
     .masonry-item .img-wrap img { width: 100%; display: block; object-fit: contain; }
-    .photo-masonry { position: relative; padding: 0 0 80px; }
-    .photo-masonry-item { width: 33.1%; margin-bottom: 4px; overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
-    .photo-masonry-item .img-wrap { width: 100%; background: var(--cream); }
+    .photo-masonry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 0 0 80px; }
+    .photo-masonry-item { overflow: hidden; position: relative; background: var(--cream); cursor: pointer; }
+    .photo-masonry-item .img-wrap { width: 100%; }
     .photo-masonry-item .img-wrap img { width: 100%; display: block; object-fit: contain; }
 
     /* ── VIDEO ── */
@@ -239,14 +237,14 @@
 
     /* ── MOBILE ── */
     @media (max-width: 1024px) {
-      .masonry-item { width: 49.7%; }
-      .photo-masonry-item { width: 49.7%; }
+      .masonry { grid-template-columns: repeat(2, 1fr); }
+      .photo-masonry { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 768px) {
       nav { padding: 14px 24px; } .nav-links { gap: 16px; } .nav-links a { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
-      .masonry { padding: 0; } .photo-masonry { padding: 0 0 60px; }
-      .masonry-item { width: 49.7%; } .photo-masonry-item { width: 49.7%; }
+      .masonry { grid-template-columns: repeat(2, 1fr); padding: 0 0 60px; }
+      .photo-masonry { grid-template-columns: repeat(2, 1fr); padding: 0 0 60px; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
@@ -482,41 +480,18 @@ function renderVideoList(tab) {
 }
 
 // ── BUILD GRIDS ──
-const msnInstances = {}; // store Masonry instances per container id
-
 function makeItem(cls, src) {
   return `<div class="${cls}" data-src="${src}"><div class="img-wrap"><img data-lazy-src="${src}" alt="" /></div></div>`;
 }
-
-function initMasonry(containerId, itemSelector, gutter) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  if (msnInstances[containerId]) {
-    msnInstances[containerId].destroy();
-  }
-  msnInstances[containerId] = new Masonry(el, {
-    itemSelector,
-    columnWidth: itemSelector,
-    percentPosition: true,
-    gutter,
-    transitionDuration: 0
-  });
-}
-
 function buildPhotoMasonry(id, photos) {
-  const el = document.getElementById(id);
-  el.innerHTML = photos.map(f => makeItem('photo-masonry-item', f)).join('');
-  initMasonry(id, '.photo-masonry-item', 4);
+  document.getElementById(id).innerHTML = photos.map(f => makeItem('photo-masonry-item', f)).join('');
 }
 function buildMasonryFor(id, images) {
-  const el = document.getElementById(id);
-  el.innerHTML = images.map(img => makeItem('masonry-item', img.src)).join('');
-  initMasonry(id, '.masonry-item', 4);
+  document.getElementById(id).innerHTML = images.map(img => makeItem('masonry-item', img.src)).join('');
 }
 function buildPrintGrid(){
   document.getElementById('print-grid').innerHTML=printImages.map((p, i)=>
     p.src ? (i < 3
-      // First 3 load immediately — they're at the top
       ? `<div class="print-item" data-src="${p.src}"><div class="img-wrap"><img src="${p.src}" alt="" class="loaded" /></div></div>`
       : makeItem('print-item', p.src))
     : `<div class="print-item"><div class="print-placeholder"><span class="print-placeholder-num">${p.num}</span><span class="print-placeholder-hint">Add image</span></div></div>`
@@ -526,7 +501,7 @@ function buildClientsGrid(){
   document.getElementById('clients-grid').innerHTML=clientData.map(c=>`<a class="client-item" href="${c.url}" target="_blank" rel="noopener" title="${c.name}"><img data-lazy-src="${c.file}" alt="${c.name}" /><span class="client-fallback">${c.name}</span></a>`).join('');
 }
 
-// Intersection observer — probes dimensions, sets aspect-ratio, then reveals
+// Intersection observer — probes dimensions, sets aspect-ratio, fades in
 const imgObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (!entry.isIntersecting) return;
@@ -535,7 +510,6 @@ const imgObserver = new IntersectionObserver((entries) => {
     const src = img.dataset.lazySrc;
     delete img.dataset.lazySrc;
     imgObserver.unobserve(img);
-
     const probe = new Image();
     probe.onload = () => {
       const wrap = img.closest('.img-wrap');
@@ -543,15 +517,7 @@ const imgObserver = new IntersectionObserver((entries) => {
         wrap.style.aspectRatio = `${probe.naturalWidth} / ${probe.naturalHeight}`;
       }
       img.src = src;
-      img.onload = () => {
-        img.classList.add('loaded');
-        // Tell Masonry to re-layout after image loads
-        const container = img.closest('.photo-masonry, .masonry');
-        if (container) {
-          const msn = msnInstances[container.id];
-          if (msn) msn.layout();
-        }
-      };
+      img.onload = () => img.classList.add('loaded');
     };
     probe.onerror = () => { img.src = src; img.classList.add('loaded'); };
     probe.src = src;
@@ -562,7 +528,6 @@ function observeImages(container) {
   const imgs = Array.from(container.querySelectorAll('img[data-lazy-src]'));
   imgs.forEach((img, i) => {
     if (i < 6) {
-      // Load first 6 immediately — they're likely already in viewport
       const src = img.dataset.lazySrc;
       delete img.dataset.lazySrc;
       const probe = new Image();
@@ -572,11 +537,7 @@ function observeImages(container) {
           wrap.style.aspectRatio = `${probe.naturalWidth} / ${probe.naturalHeight}`;
         }
         img.src = src;
-        img.onload = () => {
-          img.classList.add('loaded');
-          const container = img.closest('.photo-masonry, .masonry');
-          if (container) { const msn = msnInstances[container.id]; if (msn) msn.layout(); }
-        };
+        img.onload = () => img.classList.add('loaded');
       };
       probe.onerror = () => { img.src = src; img.classList.add('loaded'); };
       probe.src = src;
@@ -850,14 +811,6 @@ window.addEventListener('scroll',()=>{
 }, {passive: true});
 backToTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
-// Relayout Masonry on resize so columns respond to window width changes
-let _resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(() => {
-    Object.values(msnInstances).forEach(msn => msn.layout());
-  }, 100);
-}, {passive: true});
 </script>
 </body>
 </html>
