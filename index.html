@@ -121,12 +121,12 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 0 0 80px; }
-    .masonry-item { overflow: hidden; background: var(--cream); cursor: pointer; }
-    .masonry-item img { width: 100%; display: block; object-fit: contain; }
-    .photo-masonry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 0 0 80px; }
-    .photo-masonry-item { overflow: hidden; background: var(--cream); cursor: pointer; }
-    .photo-masonry-item img { width: 100%; display: block; object-fit: contain; }
+    .masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
+    .masonry-item { break-inside: avoid; margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: block; }
+    .masonry-item img { width: 100%; display: block; }
+    .photo-masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
+    .photo-masonry-item { break-inside: avoid; margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: block; }
+    .photo-masonry-item img { width: 100%; display: block; }
 
     /* ── VIDEO ── */
     .video-list { padding: 0 48px 80px; display: flex; flex-direction: column; gap: 80px; }
@@ -225,14 +225,14 @@
 
     /* ── MOBILE ── */
     @media (max-width: 1024px) {
-      .masonry { grid-template-columns: repeat(2, 1fr); }
-      .photo-masonry { grid-template-columns: repeat(2, 1fr); }
+      .masonry { columns: 2; }
+      .photo-masonry { columns: 2; }
     }
     @media (max-width: 768px) {
       nav { padding: 14px 24px; } .nav-links { gap: 16px; } .nav-links a { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
-      .masonry { grid-template-columns: repeat(2, 1fr); padding: 0 0 60px; }
-      .photo-masonry { grid-template-columns: repeat(2, 1fr); padding: 0 0 60px; }
+      .masonry { columns: 2; padding: 0 0 60px; }
+      .photo-masonry { columns: 2; padding: 0 0 60px; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
@@ -750,7 +750,7 @@ window.addEventListener('scroll',()=>{
   if(_navigating) return;
   const scrolled = window.scrollY > 20;
   document.getElementById('mainNav').classList.toggle('scrolled', scrolled);
-  backToTop.classList.toggle('visible', window.scrollY > 400);
+  backToTop.classList.toggle('visible', window.scrollY > 400 && currentPage !== 'home');
 }, {passive: true});
 backToTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
