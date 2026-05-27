@@ -392,7 +392,7 @@ const eventPhotos=shuffle(['events/DSC00815.jpg','events/DSC01758.jpg','events/D
 const concertPhotos=shuffle(['concert/AH2A1759.jpg','concert/DAN_0162.jpg','concert/DAN_0386.jpg','concert/DAN_0518.jpg','concert/DAN_0929.jpg','concert/DAN_1097.jpg','concert/DAN_1201.jpg','concert/DAN_5501.jpg','concert/DAN_5651.jpg','concert/DAN_5675.jpg','concert/DAN_5850.jpg','concert/DAN_8605.jpg','concert/DAN_9746.jpg','concert/IMG_0030.jpg','concert/IMG_0147.jpg','concert/IMG_0194.jpg','concert/IMG_0202.jpg','concert/IMG_0898.jpg']);
 const engagementPhotos=shuffle(['engagements/DSC03833.jpg','engagements/DSC03928.jpg','engagements/DSC04054.jpg','engagements/DSC04138.jpg','engagements/DSC04191.jpg','engagements/DSC04385.jpg','engagements/DSC04406.jpg','engagements/DSC04460.jpg','engagements/DSC04485.jpg','engagements/DSC04511.jpg','engagements/DSC05241.jpg','engagements/DSC05248.jpg','engagements/DSC05362.jpg','engagements/DSC05524.jpg','engagements/DSC05537.jpg','engagements/DSC05630.jpg']);
 const portraitImages=[{src:'portraits/DSC00830.jpg',label:'Portrait'},{src:'portraits/DSC01381.jpg',label:'Portrait'},{src:'portraits/DSC01421.jpg',label:'Portrait'},{src:'portraits/DSC02002.jpg',label:'Portrait'},{src:'portraits/DSC04690.jpg',label:'Portrait'},{src:'portraits/DSC06529.jpg',label:'Portrait'},{src:'portraits/DSC06855.jpg',label:'Portrait'},{src:'portraits/DSC06969.jpg',label:'Portrait'},{src:'portraits/DSC07945.jpg',label:'Portrait'},{src:'portraits/DSC07980.jpg',label:'Portrait'},{src:'portraits/DSC08083.jpg',label:'Portrait'},{src:'portraits/espoir.jpg',label:'Espoir'},{src:'portraits/mint-cover.jpg',label:'MINT Cover'},{src:'portraits/mint-table-of-contents.jpg',label:'MINT — Table of Contents'}];
-const fashionImages=shuffle([{src:'fashion/DSC06509.jpg'},{src:'fashion/DSC06629.jpg'},{src:'fashion/DSC06658.jpg'},{src:'fashion/DSC06662.jpg'},{src:'fashion/DSC06705.jpg'},{src:'fashion/DSC06731.jpg'},{src:'fashion/DSC06743.jpg'},{src:'fashion/DSC06755.jpg'},{src:'fashion/DSC06801.jpg'},{src:'fashion/DSC07047.jpg'},{src:'fashion/DSC07082.jpg'},{src:'fashion/DSC07084.jpg'},{src:'fashion/DSC07205.jpg'},{src:'fashion/DSC07253.jpg'},{src:'fashion/DSC07400.jpg'},{src:'fashion/DSC07425.jpg'},{src:'fashion/DSC07510.jpg'},{src:'fashion/DSC07714.jpg'},{src:'fashion/DSC07906.jpg'}]);
+const fashionImages=shuffle([{src:'fashion/DSC06509.jpg'},{src:'fashion/DSC06629.jpg'},{src:'fashion/DSC06658.jpg'},{src:'fashion/DSC06662.jpg'},{src:'fashion/DSC06705.jpg'},{src:'fashion/DSC06731.jpg'},{src:'fashion/DSC06743.jpg'},{src:'fashion/DSC06755.jpg'},{src:'fashion/DSC06801.jpg'},{src:'fashion/DSC07047.jpg'},{src:'fashion/DSC07082.jpg'},{src:'fashion/DSC07084.jpg'},{src:'fashion/DSC07205.jpg'},{src:'fashion/DSC07253.jpg'},{src:'fashion/DSC07341.jpg'},{src:'fashion/DSC07400.jpg'},{src:'fashion/DSC07425.jpg'},{src:'fashion/DSC07510.jpg'},{src:'fashion/DSC07714.jpg'},{src:'fashion/DSC07906.jpg'}]);
 const printImages=[{src:'print/dialects-of-red-1.jpg',num:'01'},{src:'print/dialects-of-red-2.jpg',num:'02'},{src:'print/dialects-of-red-3.jpg',num:'03'},{src:'print/dialects-of-red-4.jpg',num:'04'},{src:'print/dialects-of-red-5.jpg',num:'05'},{src:'print/homophily-1.jpg',num:'06'},{src:'print/homophily-2.jpg',num:'07'},{src:'print/homophily-3.jpg',num:'08'},{src:'print/homophily-4.jpg',num:'09'},{src:'print/homophily-5.jpg',num:'10'},{src:'print/homophily-6.jpg',num:'11'},{src:'print/homophily-7.jpg',num:'12'},{src:'print/homophily-8.jpg',num:'13'},{src:'print/bedroom-mirrors-1.jpg',num:'14'},{src:'print/bedroom-mirrors-2.jpg',num:'15'},{src:'print/bedroom-mirrors-3.jpg',num:'16'},{src:'print/bedroom-mirrors-4.jpg',num:'17'},{src:'print/bedroom-mirrors-5.jpg',num:'18'},{src:'print/bedroom-mirrors-6.jpg',num:'19'},{src:'print/bedroom-mirrors-7.jpg',num:'20'},{src:'print/bedroom-mirrors-8.jpg',num:'21'},{src:'print/bedroom-mirrors-9.jpg',num:'22'},{src:'print/bedroom-mirrors-10.jpg',num:'23'},{src:'print/bedroom-mirrors-11.jpg',num:'24'},{src:'print/bedroom-mirrors-12.jpg',num:'25'},{src:'print/bedroom-mirrors-13.jpg',num:'26'},{src:'print/bedroom-mirrors-14.jpg',num:'27'},{src:'print/bedroom-mirrors-15.jpg',num:'28'}];
 
 const videoData={
@@ -517,21 +517,21 @@ function layoutOnLoad(containerId) {
 }
 
 // ── BUILD GRIDS ──
-function makeItem(cls, src) {
-  return `<div class="${cls}" data-src="${src}"><img src="${src}" alt="" loading="lazy" /></div>`;
+function makeItem(cls, src, eager) {
+  return `<div class="${cls}" data-src="${src}"><img src="${src}" alt="" ${eager === 'first' ? 'fetchpriority="high"' : eager ? '' : 'loading="lazy"'} /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
-  document.getElementById(id).innerHTML = photos.map(f => makeItem('photo-masonry-item', f)).join('');
+  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, i === 0 ? 'first' : i < 6)).join('');
   layoutOnLoad(id);
 }
 function buildMasonryFor(id, images) {
-  document.getElementById(id).innerHTML = images.map(img => makeItem('masonry-item', img.src)).join('');
+  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, i === 0 ? 'first' : i < 6)).join('');
   layoutOnLoad(id);
 }
 function buildPrintGrid(){
-  document.getElementById('print-grid').innerHTML = printImages.map(p =>
+  document.getElementById('print-grid').innerHTML = printImages.map((p, i) =>
     p.src
-      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" loading="lazy" /></div>`
+      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" ${i < 3 ? '' : 'loading="lazy"'} /></div>`
       : `<div class="print-item"><div class="print-placeholder"><span class="print-placeholder-num">${p.num}</span><span class="print-placeholder-hint">Add image</span></div></div>`
   ).join('');
 }
