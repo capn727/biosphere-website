@@ -121,10 +121,10 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { position: relative; padding: 0 0 80px; }
+    .masonry { position: relative; padding: 0 48px 80px; }
     .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .masonry-item img { width: 100%; display: block; }
-    .photo-masonry { position: relative; padding: 0 0 80px; }
+    .photo-masonry { position: relative; padding: 0 48px 80px; }
     .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .photo-masonry-item img { width: 100%; display: block; }
 
@@ -231,7 +231,7 @@
     @media (max-width: 768px) {
       nav { padding: 14px 24px; } .nav-links { gap: 16px; } .nav-links a { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
-      .masonry { padding: 0 0 60px; } .photo-masonry { padding: 0 0 60px; }
+      .masonry { padding: 0 24px 60px; } .photo-masonry { padding: 0 24px 60px; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
@@ -467,7 +467,7 @@ function renderVideoList(tab) {
 }
 
 // ── CUSTOM MASONRY LAYOUT ──
-const GAP = 4;
+const GAP = 0;
 
 function getColumns() {
   if (window.innerWidth <= 768) return 2;
@@ -483,24 +483,22 @@ function layoutMasonry(containerId) {
 
   const cols = getColumns();
   const totalWidth = container.offsetWidth;
-  const colWidth = (totalWidth - GAP * (cols - 1)) / cols;
+  const colWidth = Math.floor(totalWidth / cols);
   const colHeights = new Array(cols).fill(0);
 
   items.forEach(item => {
-    // Find shortest column
     const minH = Math.min(...colHeights);
     const col = colHeights.indexOf(minH);
-    const x = col * (colWidth + GAP);
-    const y = colHeights[col];
+    const x = Math.floor(col * colWidth);
+    const y = Math.floor(colHeights[col]);
 
     item.style.width = colWidth + 'px';
     item.style.left = x + 'px';
     item.style.top = y + 'px';
 
-    colHeights[col] += item.offsetHeight + GAP;
+    colHeights[col] += Math.floor(item.offsetHeight);
   });
 
-  // Set container height to tallest column
   container.style.height = Math.max(...colHeights) + 'px';
 }
 
