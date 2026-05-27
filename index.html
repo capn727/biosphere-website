@@ -122,11 +122,11 @@
 
     /* ── MASONRY ── */
     .masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
-    .masonry-item { break-inside: avoid; margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: block; }
-    .masonry-item img { width: 100%; display: block; }
+    .masonry-item { margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: inline-block; width: 100%; }
+    .masonry-item img { width: 100%; display: block; vertical-align: top; }
     .photo-masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
-    .photo-masonry-item { break-inside: avoid; margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: block; }
-    .photo-masonry-item img { width: 100%; display: block; }
+    .photo-masonry-item { margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: inline-block; width: 100%; }
+    .photo-masonry-item img { width: 100%; display: block; vertical-align: top; }
 
     /* ── VIDEO ── */
     .video-list { padding: 0 48px 80px; display: flex; flex-direction: column; gap: 80px; }
