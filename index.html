@@ -95,8 +95,8 @@
     .page-header-desc { max-width: 360px; font-family: var(--sans); font-size: 0.88rem; color: #3a5570; line-height: 1.75; text-align: right; }
 
     /* ── SUB-NAV ── */
-    .sub-nav { display: flex; justify-content: center; padding: 0 48px; margin-bottom: 56px; border-bottom: 1px solid var(--warm-gray); overflow: hidden; flex-wrap: wrap; }
-    .sub-nav-btn { font-family: var(--sans); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.14em; text-transform: lowercase; color: var(--mid-gray); background: none; border: none; padding: 0 0 16px 0; margin: 0 16px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.2s, border-color 0.2s, letter-spacing 0.2s; position: relative; top: 1px; }
+    .sub-nav { display: flex; justify-content: center; padding: 0 48px; margin-bottom: 56px; border-top: 1px solid var(--warm-gray); border-bottom: 1px solid var(--warm-gray); overflow: hidden; flex-wrap: wrap; }
+    .sub-nav-btn { font-family: var(--sans); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.14em; text-transform: lowercase; color: var(--mid-gray); background: none; border: none; padding: 16px 0; margin: 0 16px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.2s, border-color 0.2s, letter-spacing 0.2s; position: relative; top: 1px; }
     .sub-nav-btn:hover { color: var(--dark); }
     .sub-nav-btn.active { color: var(--dark); border-bottom-color: var(--accent); letter-spacing: 0.22em; }
     .sub-page { display: none; }
@@ -121,12 +121,12 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
-    .masonry-item { margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: inline-block; width: 100%; }
-    .masonry-item img { width: 100%; display: block; vertical-align: top; }
-    .photo-masonry { columns: 3; column-gap: 4px; padding: 0 0 80px; }
-    .photo-masonry-item { margin-bottom: 4px; overflow: hidden; background: var(--cream); cursor: pointer; display: inline-block; width: 100%; }
-    .photo-masonry-item img { width: 100%; display: block; vertical-align: top; }
+    .masonry { position: relative; padding: 0 0 80px; }
+    .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
+    .masonry-item img { width: 100%; display: block; }
+    .photo-masonry { position: relative; padding: 0 0 80px; }
+    .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
+    .photo-masonry-item img { width: 100%; display: block; }
 
     /* ── VIDEO ── */
     .video-list { padding: 0 48px 80px; display: flex; flex-direction: column; gap: 80px; }
@@ -225,14 +225,13 @@
 
     /* ── MOBILE ── */
     @media (max-width: 1024px) {
-      .masonry { columns: 2; }
-      .photo-masonry { columns: 2; }
+      .masonry { padding: 0 0 60px; }
+      .photo-masonry { padding: 0 0 60px; }
     }
     @media (max-width: 768px) {
       nav { padding: 14px 24px; } .nav-links { gap: 16px; } .nav-links a { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
-      .masonry { columns: 2; padding: 0 0 60px; }
-      .photo-masonry { columns: 2; padding: 0 0 60px; }
+      .masonry { padding: 0 0 60px; } .photo-masonry { padding: 0 0 60px; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
@@ -467,15 +466,67 @@ function renderVideoList(tab) {
   container.innerHTML=`<div class="video-list" style="padding-top:8px">${rows}</div>`;
 }
 
+// ── CUSTOM MASONRY LAYOUT ──
+const GAP = 4;
+
+function getColumns() {
+  if (window.innerWidth <= 768) return 2;
+  if (window.innerWidth <= 1024) return 2;
+  return 3;
+}
+
+function layoutMasonry(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const items = Array.from(container.children);
+  if (!items.length) return;
+
+  const cols = getColumns();
+  const totalWidth = container.offsetWidth;
+  const colWidth = (totalWidth - GAP * (cols - 1)) / cols;
+  const colHeights = new Array(cols).fill(0);
+
+  items.forEach(item => {
+    // Find shortest column
+    const minH = Math.min(...colHeights);
+    const col = colHeights.indexOf(minH);
+    const x = col * (colWidth + GAP);
+    const y = colHeights[col];
+
+    item.style.width = colWidth + 'px';
+    item.style.left = x + 'px';
+    item.style.top = y + 'px';
+
+    colHeights[col] += item.offsetHeight + GAP;
+  });
+
+  // Set container height to tallest column
+  container.style.height = Math.max(...colHeights) + 'px';
+}
+
+// Re-layout when images load inside a container
+function layoutOnLoad(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  layoutMasonry(containerId);
+  container.querySelectorAll('img').forEach(img => {
+    if (img.complete) return;
+    img.addEventListener('load', () => layoutMasonry(containerId), { once: true });
+    img.addEventListener('error', () => layoutMasonry(containerId), { once: true });
+  });
+}
+
 // ── BUILD GRIDS ──
 function makeItem(cls, src) {
   return `<div class="${cls}" data-src="${src}"><img src="${src}" alt="" loading="lazy" /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
   document.getElementById(id).innerHTML = photos.map(f => makeItem('photo-masonry-item', f)).join('');
+  layoutOnLoad(id);
 }
 function buildMasonryFor(id, images) {
   document.getElementById(id).innerHTML = images.map(img => makeItem('masonry-item', img.src)).join('');
+  layoutOnLoad(id);
 }
 function buildPrintGrid(){
   document.getElementById('print-grid').innerHTML = printImages.map(p =>
@@ -678,7 +729,11 @@ document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(btn=>btn.addEve
   document.querySelectorAll('#page-photography .sub-page').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   const subPage = document.getElementById('photo-sub-'+btn.dataset.name);
-  if (subPage) { subPage.classList.add('active');  }
+  if (subPage) {
+    subPage.classList.add('active');
+    // Re-layout after tab becomes visible
+    setTimeout(() => layoutMasonry(subPage.querySelector('.photo-masonry, .masonry')?.id), 50);
+  }
   sessionStorage.setItem('biosphere_photo_tab', btn.dataset.name);
 }));
 
@@ -753,6 +808,15 @@ window.addEventListener('scroll',()=>{
   backToTop.classList.toggle('visible', window.scrollY > 400 && currentPage !== 'home');
 }, {passive: true});
 backToTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
+
+// Re-layout masonry on window resize
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    ['events-masonry','concerts-masonry','engagements-masonry','portrait-masonry','fashion-masonry'].forEach(layoutMasonry);
+  }, 100);
+}, {passive: true});
 
 </script>
 </body>
