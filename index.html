@@ -118,10 +118,10 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { position: relative; padding: 0 48px 80px; }
+    .masonry { position: relative; padding: 0 48px 80px; margin-bottom: 24px; }
     .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .masonry-item img { width: 100%; display: block; }
-    .photo-masonry { position: relative; padding: 0 48px 80px; }
+    .photo-masonry { position: relative; padding: 0 48px 80px; margin-bottom: 24px; }
     .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .photo-masonry-item img { width: 100%; display: block; }
 
@@ -149,13 +149,13 @@
     .print-placeholder-hint { font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); }
 
     /* ── TESTIMONIALS ── */
-    .testimonials-section { padding: 80px 48px 100px; background: var(--cream); border-top: 1px solid var(--warm-gray); }
-    .testimonials-label { font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mid-gray); margin-bottom: 48px; }
+    .testimonials-section { padding: 80px 48px 100px; background: var(--accent); border-top: none; }
+    .testimonials-label { font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 48px; }
     .testimonials-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-    .testimonial { border-left: 2px solid var(--accent); padding-left: 24px; }
-    .testimonial-quote { font-family: var(--serif); font-size: clamp(1rem, 1.6vw, 1.15rem); font-style: italic; line-height: 1.7; color: var(--dark); margin-bottom: 20px; }
+    .testimonial { border-left: 2px solid rgba(255,255,255,0.4); padding-left: 24px; }
+    .testimonial-quote { font-family: var(--serif); font-size: clamp(1rem, 1.6vw, 1.15rem); font-style: italic; line-height: 1.7; color: #ffffff; margin-bottom: 20px; }
     .testimonial-quote::before { content: '\201C'; } .testimonial-quote::after { content: '\201D'; }
-    .testimonial-source { font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mid-gray); }
+    .testimonial-source { font-family: var(--sans); font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
 
     /* ── CLIENTS ── */
     .clients-section { padding: 80px 48px 100px; border-top: 1px solid var(--warm-gray); background: #ffffff; }
