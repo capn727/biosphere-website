@@ -469,7 +469,7 @@ function renderVideoList(tab) {
 }
 
 // ── CUSTOM MASONRY LAYOUT ──
-const GAP = 0;
+const GAP = 6;
 
 function getColumns() {
   if (window.innerWidth <= 768) return 2;
@@ -488,20 +488,20 @@ function layoutMasonry(containerId) {
   const paddingLeft = parseFloat(style.paddingLeft) || 0;
   const paddingRight = parseFloat(style.paddingRight) || 0;
   const totalWidth = container.offsetWidth - paddingLeft - paddingRight;
-  const colWidth = Math.floor(totalWidth / cols);
+  const colWidth = Math.floor((totalWidth - GAP * (cols - 1)) / cols);
   const colHeights = new Array(cols).fill(0);
 
   items.forEach(item => {
     const minH = Math.min(...colHeights);
     const col = colHeights.indexOf(minH);
-    const x = Math.floor(col * colWidth);
+    const x = Math.floor(col * (colWidth + GAP));
     const y = Math.floor(colHeights[col]);
 
     item.style.width = colWidth + 'px';
     item.style.left = x + 'px';
     item.style.top = y + 'px';
 
-    colHeights[col] += Math.floor(item.offsetHeight);
+    colHeights[col] += Math.floor(item.offsetHeight) + GAP;
   });
 
   container.style.height = Math.max(...colHeights) + 'px';
