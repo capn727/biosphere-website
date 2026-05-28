@@ -122,10 +122,10 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
-    .masonry { position: relative; padding: 0 0 0 48px; margin-bottom: 0; }
+    .masonry { position: relative; padding: 0; margin-bottom: 0; }
     .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .masonry-item img { width: 100%; display: block; }
-    .photo-masonry { position: relative; padding: 0 0 0 48px; margin-bottom: 0; }
+    .photo-masonry { position: relative; padding: 0; margin-bottom: 0; }
     .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
     .photo-masonry-item img { width: 100%; display: block; }
 
@@ -507,21 +507,36 @@ function layoutMasonry(containerId) {
 function layoutOnLoad(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  layoutMasonry(containerId);
-  container.querySelectorAll('img').forEach(img => {
-    if (img.complete && img.naturalWidth > 0) return;
+
+  let pending = 0;
+  const imgs = Array.from(container.querySelectorAll('img'));
+
+  imgs.forEach(img => {
+    if (img.complete && img.naturalWidth > 0) return; // already loaded
     if (img.complete && img.naturalWidth === 0) {
       // Already failed — hide the cell
-      img.closest('.photo-masonry-item, .masonry-item') && (img.closest('.photo-masonry-item, .masonry-item').style.display = 'none');
+      const cell = img.closest('.photo-masonry-item, .masonry-item');
+      if (cell) cell.style.display = 'none';
       return;
     }
-    img.addEventListener('load', () => layoutMasonry(containerId), { once: true });
+    pending++;
+    img.addEventListener('load', () => {
+      pending--;
+      layoutMasonry(containerId);
+    }, { once: true });
     img.addEventListener('error', () => {
       const cell = img.closest('.photo-masonry-item, .masonry-item');
       if (cell) cell.style.display = 'none';
+      pending--;
       layoutMasonry(containerId);
     }, { once: true });
   });
+
+  // Run immediately for any already-loaded images, and once all eager images settle
+  layoutMasonry(containerId);
+  // Also re-run after a short delay to catch any images that loaded synchronously
+  setTimeout(() => layoutMasonry(containerId), 100);
+  setTimeout(() => layoutMasonry(containerId), 500);
 }
 
 // ── BUILD GRIDS ──
