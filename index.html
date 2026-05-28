@@ -113,7 +113,7 @@
     .home-fullscreen { position: relative; width: 100%; height: 100vh; height: 100dvh; min-height: 600px; overflow: hidden; background: var(--dark); }
     .home-fullscreen img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
     @media (max-width: 768px) {
-      .home-fullscreen { min-height: unset; }
+      .home-fullscreen { height: calc(100dvh - 60px); min-height: unset; }
       .home-fullscreen img { object-fit: contain; object-position: center center; }
     }
     .hero-cta-wrap { position: absolute; bottom: 48px; right: 48px; z-index: 10020; }
@@ -295,6 +295,8 @@
   <div class="page-header">
     <h1 class="page-header-title">Photo<em>graphy</em></h1>
     <p class="page-header-desc">!</p>
+  </div>
+  <div class="sub-nav" id="photo-sub-nav">
     <button type="button" class="sub-nav-btn active" data-name="events">events</button>
     <button type="button" class="sub-nav-btn" data-name="concerts">concerts</button>
     <button type="button" class="sub-nav-btn" data-name="engagements">engagements</button>
