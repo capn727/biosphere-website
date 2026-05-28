@@ -112,10 +112,9 @@
     /* ── HOME ── */
     .home-fullscreen { position: relative; width: 100%; height: 100vh; min-height: 600px; overflow: hidden; background: var(--dark); }
     .home-fullscreen img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
-    .home-cta-overlay { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); z-index: 10020; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .scroll-label { font-family: var(--sans); font-size: 0.58rem; letter-spacing: 0.22em; text-transform: lowercase; color: rgba(255,255,255,0.7); }
-    .scroll-line { width: 1px; height: 48px; background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0)); animation: scrollPulse 2s ease-in-out infinite; }
-    @keyframes scrollPulse { 0%,100% { transform: scaleY(1); opacity: 1; } 50% { transform: scaleY(0.6); opacity: 0.4; } }
+    @media (max-width: 768px) {
+      .home-fullscreen img { object-fit: contain; object-position: center center; }
+    }
     .hero-cta-wrap { position: absolute; bottom: 48px; right: 48px; z-index: 10020; }
     .hero-cta { display: inline-flex; align-items: center; gap: 12px; font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: lowercase; color: var(--dark); cursor: pointer; text-decoration: none; background: rgba(255,255,255,0.88); backdrop-filter: blur(6px); padding: 14px 24px; border: 1px solid rgba(1,46,84,0.15); transition: gap 0.3s ease; position: relative; z-index: 10020; }
     .hero-cta:hover { gap: 20px; }
@@ -284,10 +283,6 @@
 <div class="page active" id="page-home">
   <div class="home-fullscreen">
     <img src="mission-statement.png" alt="BIOSPHERE" />
-    <div class="home-cta-overlay">
-      <span class="scroll-label">scroll</span>
-      <div class="scroll-line"></div>
-    </div>
     <div class="hero-cta-wrap">
       <button type="button" class="hero-cta" id="hero-cta-btn">view work</button>
     </div>
