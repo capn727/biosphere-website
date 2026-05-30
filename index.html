@@ -112,11 +112,11 @@
     /* ── HOME ── */
     .home-fullscreen { position: relative; width: 100%; height: 100vh; height: 100dvh; min-height: 600px; overflow: hidden; background: var(--dark); }
     .home-fullscreen picture { width: 100%; height: 100%; display: block; }
-    .home-fullscreen img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+    .home-fullscreen img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; }
     @media (max-width: 768px) {
       #page-home { min-height: unset; }
       .home-fullscreen { height: 100dvh; min-height: unset; }
-      .home-fullscreen img { object-fit: contain; object-position: center center; }
+      .home-fullscreen img { object-fit: cover; object-position: center center; }
     }
     .hero-cta-wrap { position: absolute; bottom: 48px; right: 48px; z-index: 10020; }
     .hero-cta { display: inline-flex; align-items: center; gap: 12px; font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: lowercase; color: var(--dark); cursor: pointer; text-decoration: none; background: rgba(255,255,255,0.88); backdrop-filter: blur(6px); padding: 14px 24px; border: 1px solid rgba(1,46,84,0.15); transition: gap 0.3s ease; position: relative; z-index: 10020; }
@@ -235,7 +235,7 @@
       nav { padding: 14px 24px; flex-wrap: wrap; gap: 8px; } .nav-links { gap: 16px; flex-wrap: wrap; } .nav-links a, .nav-links button { font-size: 0.58rem; } .nav-logo-img { height: 30px; }
       .back-to-top { display: none !important; }
       .home-cta-overlay { bottom: 24px; right: 24px; }
-      .masonry { padding: 0 24px 60px; } .photo-masonry { padding: 0 24px 60px; }
+      .masonry { padding: 0; } .photo-masonry { padding: 0; }
       .video-list { padding: 0 24px 60px; gap: 48px; } .video-row { grid-template-columns: 1fr; gap: 24px; }
       .video-pair { grid-template-columns: 1fr; gap: 16px; }
       .video-row.text-left .video-embed-wrap, .video-row.text-right .video-embed-wrap { order: 1; }
