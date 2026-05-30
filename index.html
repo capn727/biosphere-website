@@ -513,35 +513,55 @@ function layoutOnLoad(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  let pending = 0;
+  // Hide items initially to prevent flash of stacked images
+  container.style.opacity = '0';
+
   const imgs = Array.from(container.querySelectorAll('img'));
+  let loaded = 0;
+  const total = imgs.filter(img => !img.complete).length;
+
+  function onSettle() {
+    loaded++;
+    layoutMasonry(containerId);
+    // Once first few have loaded, show the grid
+    if (loaded >= Math.min(3, total)) {
+      container.style.opacity = '1';
+    }
+  }
 
   imgs.forEach(img => {
-    if (img.complete && img.naturalWidth > 0) return; // already loaded
-    if (img.complete && img.naturalWidth === 0) {
-      // Already failed — hide the cell
+    if (img.complete && img.naturalWidth > 0) {
+      // already loaded
+    } else if (img.complete && img.naturalWidth === 0) {
       const cell = img.closest('.photo-masonry-item, .masonry-item');
       if (cell) cell.style.display = 'none';
-      return;
+    } else {
+      img.addEventListener('load', () => { onSettle(); }, { once: true });
+      img.addEventListener('error', () => {
+        const cell = img.closest('.photo-masonry-item, .masonry-item');
+        if (cell) cell.style.display = 'none';
+        onSettle();
+      }, { once: true });
     }
-    pending++;
-    img.addEventListener('load', () => {
-      pending--;
-      layoutMasonry(containerId);
-    }, { once: true });
-    img.addEventListener('error', () => {
-      const cell = img.closest('.photo-masonry-item, .masonry-item');
-      if (cell) cell.style.display = 'none';
-      pending--;
-      layoutMasonry(containerId);
-    }, { once: true });
   });
 
-  // Run immediately for any already-loaded images, and once all eager images settle
-  layoutMasonry(containerId);
-  // Also re-run after a short delay to catch any images that loaded synchronously
-  setTimeout(() => layoutMasonry(containerId), 100);
-  setTimeout(() => layoutMasonry(containerId), 500);
+  // If all images were already cached, show immediately
+  if (total === 0) {
+    requestAnimationFrame(() => {
+      layoutMasonry(containerId);
+      container.style.opacity = '1';
+    });
+  }
+
+  // Safety re-layouts
+  setTimeout(() => { layoutMasonry(containerId); container.style.opacity = '1'; }, 300);
+  setTimeout(() => layoutMasonry(containerId), 800);
+
+  // ResizeObserver catches any late dimension changes
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => layoutMasonry(containerId));
+    imgs.forEach(img => ro.observe(img));
+  }
 }
 
 // ── BUILD GRIDS ──
