@@ -659,52 +659,107 @@ if (hasFineMouse) {
   });
 }
 
-// ── NAVIGATION ──
+// ── ROUTING ──
 history.scrollRestoration = 'manual';
 let currentPage='home';
 let _navigating = false;
 
-function showPage(name){
-  if(currentPage===name) return;
-  if(_navigating) return;
-  _navigating = true;
+// Maps a URL path (without leading slash) to a {page, sub} route.
+// This is what makes links like /events, /concerts, /documentary shareable.
+const ROUTE_MAP = {
+  '': {page:'home'},
+  'photography': {page:'photography', sub:'events'},
+  'events': {page:'photography', sub:'events'},
+  'concerts': {page:'photography', sub:'concerts'},
+  'engagements': {page:'photography', sub:'engagements'},
+  'portraiture': {page:'photography', sub:'portraiture'},
+  'fashion': {page:'photography', sub:'fashion'},
+  'print': {page:'photography', sub:'print'},
+  'videography': {page:'videography', sub:'documentary'},
+  'documentary': {page:'videography', sub:'documentary'},
+  'experimental': {page:'videography', sub:'experimental'},
+  'about': {page:'about'}
+};
 
-  currentPage=name;
-  sessionStorage.setItem('biosphere_page', name);
-  // Always reset photo tab to events when navigating to photography
-  if (name === 'photography') {
-    sessionStorage.setItem('biosphere_photo_tab', 'events');
-  }
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-links button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  // Reset photo sub-tab to events on navigation
-  if (name === 'photography') {
-    document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('#page-photography .sub-page').forEach(p => p.classList.remove('active'));
-    const eventsBtn = document.querySelector('#photo-sub-nav .sub-nav-btn[data-name="events"]');
-    if (eventsBtn) eventsBtn.classList.add('active');
-    const eventsPage = document.getElementById('photo-sub-events');
-    if (eventsPage) eventsPage.classList.add('active');
-  }
-  const btn=document.querySelector(`.nav-links button[data-page="${name}"]`);
-  if(btn)btn.classList.add('active');
-  const isHome=name==='home';
-  document.body.classList.toggle('home-active',isHome);
-  trailActive=isHome;
-  if(!isHome&&hasFineMouse) document.querySelectorAll('.trail-img').forEach(img=>img.classList.remove('visible'));
-  // Always hide back-to-top when on home
-  if(isHome && document.getElementById('backToTop')) {
-    document.getElementById('backToTop').classList.remove('visible');
-  }
-
-  // Use requestAnimationFrame to scroll AFTER paint, preventing scroll events from interfering
-  requestAnimationFrame(()=>{
-    document.documentElement.scrollTop=0;
-    document.body.scrollTop=0;
-    setTimeout(()=>{ _navigating=false; }, 50);
-  });
+function pathFor(page, sub){
+  if(page==='home') return '/';
+  if(page==='photography') return '/' + (sub || 'events');
+  if(page==='videography') return '/' + (sub || 'documentary');
+  if(page==='about') return '/about';
+  return '/';
 }
+
+function parsePath(pathname){
+  const slug = pathname.replace(/^\/+|\/+$/g,'').toLowerCase();
+  return ROUTE_MAP[slug] || {page:'home'};
+}
+
+function activatePhotoTab(name){
+  document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.name===name));
+  document.querySelectorAll('#page-photography .sub-page').forEach(p=>p.classList.remove('active'));
+  const subPage = document.getElementById('photo-sub-'+name);
+  if (subPage) {
+    subPage.classList.add('active');
+    setTimeout(() => layoutMasonry(subPage.querySelector('.photo-masonry, .masonry')?.id), 50);
+  }
+}
+
+function activateVideoTab(tab){
+  document.querySelectorAll('#video-sub-nav .sub-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  renderVideoList(tab);
+}
+
+// The single entry point for all navigation — swaps pages/tabs and, unless
+// told not to (e.g. on popstate), pushes a new URL onto the history stack.
+function navigate(page, sub, opts){
+  opts = opts || {};
+  const push = opts.push !== false;
+  const samePage = currentPage===page;
+
+  if(!samePage){
+    currentPage=page;
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-links button').forEach(b=>b.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    const btn=document.querySelector(`.nav-links button[data-page="${page}"]`);
+    if(btn)btn.classList.add('active');
+    const isHome=page==='home';
+    document.body.classList.toggle('home-active',isHome);
+    trailActive=isHome;
+    if(!isHome&&hasFineMouse) document.querySelectorAll('.trail-img').forEach(img=>img.classList.remove('visible'));
+    if(isHome && document.getElementById('backToTop')) {
+      document.getElementById('backToTop').classList.remove('visible');
+    }
+  }
+
+  if(page==='photography'){
+    activatePhotoTab(sub || 'events');
+  } else if(page==='videography'){
+    activateVideoTab(sub || 'documentary');
+  }
+
+  if(push){
+    const path = pathFor(page, sub);
+    if(location.pathname !== path){
+      history.pushState({page,sub}, '', path);
+    }
+  }
+
+  if(!samePage && !_navigating){
+    _navigating = true;
+    requestAnimationFrame(()=>{
+      document.documentElement.scrollTop=0;
+      document.body.scrollTop=0;
+      setTimeout(()=>{ _navigating=false; }, 50);
+    });
+  }
+}
+
+// Handles the browser's back/forward buttons
+window.addEventListener('popstate', (e)=>{
+  const route = e.state || parsePath(location.pathname);
+  navigate(route.page, route.sub, {push:false});
+});
 
 // ── LIGHTBOX ──
 let lbPhotos=[],lbIdx=0;
@@ -773,64 +828,31 @@ renderVideoList('documentary');
 document.body.classList.add('home-active');
 trailActive=true;
 
-// Start observing all lazy images
-
-
-// Restore page from sessionStorage (survives live-server reloads)
-const _savedPage = sessionStorage.getItem('biosphere_page');
-if (_savedPage && _savedPage !== 'home') {
-  // Bypass the guard by temporarily resetting currentPage
+// Route to whatever page the URL points at on load (deep-link support)
+{
+  const route = parsePath(location.pathname);
   currentPage = 'home';
-  showPage(_savedPage);
+  navigate(route.page, route.sub, {push:false});
+  history.replaceState({page: route.page, sub: route.sub}, '', pathFor(route.page, route.sub));
 }
 
 // nav
-document.getElementById('nav-home-logo').addEventListener('click',e=>{e.stopPropagation();showPage('home');});
-document.querySelectorAll('.nav-links button[data-page]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();showPage(btn.dataset.page);}));
-document.getElementById('hero-cta-btn').addEventListener('click',e=>{e.stopPropagation();showPage('photography');});
+document.getElementById('nav-home-logo').addEventListener('click',e=>{e.stopPropagation();navigate('home');});
+document.querySelectorAll('.nav-links button[data-page]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();navigate(btn.dataset.page);}));
+document.getElementById('hero-cta-btn').addEventListener('click',e=>{e.stopPropagation();navigate('photography');});
 // Scroll indicator clicks through to photography
 const scrollIndicator = document.querySelector('.home-cta-overlay');
-if (scrollIndicator) scrollIndicator.addEventListener('click',e=>{e.stopPropagation();showPage('photography');});
+if (scrollIndicator) scrollIndicator.addEventListener('click',e=>{e.stopPropagation();navigate('photography');});
 
 // photo sub-nav
 document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('#page-photography .sub-page').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');
-  const subPage = document.getElementById('photo-sub-'+btn.dataset.name);
-  if (subPage) {
-    subPage.classList.add('active');
-    // Re-layout after tab becomes visible
-    setTimeout(() => layoutMasonry(subPage.querySelector('.photo-masonry, .masonry')?.id), 50);
-  }
-  sessionStorage.setItem('biosphere_photo_tab', btn.dataset.name);
+  navigate('photography', btn.dataset.name);
 }));
 
 // video sub-nav
 document.querySelectorAll('#video-sub-nav .sub-nav-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('#video-sub-nav .sub-nav-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  renderVideoList(btn.dataset.tab);
-  sessionStorage.setItem('biosphere_video_tab', btn.dataset.tab);
+  navigate('videography', btn.dataset.tab);
 }));
-
-// Restore sub-tabs from sessionStorage
-const _savedPhotoTab = sessionStorage.getItem('biosphere_photo_tab');
-if (_savedPhotoTab && _savedPhotoTab !== 'events') {
-  document.querySelectorAll('#photo-sub-nav .sub-nav-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('#page-photography .sub-page').forEach(p=>p.classList.remove('active'));
-  const btn = document.querySelector(`#photo-sub-nav .sub-nav-btn[data-name="${_savedPhotoTab}"]`);
-  if (btn) btn.classList.add('active');
-  const subPage = document.getElementById('photo-sub-'+_savedPhotoTab);
-  if (subPage) { subPage.classList.add('active');  }
-}
-const _savedVideoTab = sessionStorage.getItem('biosphere_video_tab');
-if (_savedVideoTab && _savedVideoTab !== 'documentary') {
-  document.querySelectorAll('#video-sub-nav .sub-nav-btn').forEach(b=>b.classList.remove('active'));
-  const btn = document.querySelector(`#video-sub-nav .sub-nav-btn[data-tab="${_savedVideoTab}"]`);
-  if (btn) btn.classList.add('active');
-  renderVideoList(_savedVideoTab);
-}
 
 // lightbox — single delegated click listener, zero inline handlers
 document.addEventListener('click',e=>{
