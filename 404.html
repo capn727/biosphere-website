@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>BIOSPHERE</title>
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // https://github.com/rafgraph/spa-github-pages
+      //
+      // GitHub Pages doesn't know about client-side routes like /events —
+      // it 404s them. This catches that 404, encodes the path the visitor
+      // actually wanted into a query string, and sends them to index.html,
+      // which decodes it and hands off to the router.
+      //
+      // pathSegmentsToKeep = 0 assumes this site lives at the root of a
+      // custom domain (e.g. chloepn.com/events).
+      // If instead it's served at username.github.io/reponame/, change
+      // this to 1 so the repo name isn't swallowed.
+      var pathSegmentsToKeep = 0;
+
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
+        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
