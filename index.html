@@ -6,7 +6,16 @@
   <title>BIOSPHERE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet" />
+  <!-- Non-blocking font stylesheet: loads in parallel with the rest of the
+       page instead of holding up first paint. display=swap (already in the
+       URL) means text still shows immediately in a fallback font. -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" /></noscript>
+  <!-- The very first thing anyone sees is the home hero — start fetching
+       it immediately, before CSS/JS have even finished parsing. -->
+  <link rel="preload" as="image" href="mission-statement.png" media="(min-width: 769px)" />
+  <link rel="preload" as="image" href="mission-statement-mobile.png" media="(max-width: 768px)" />
+  <link rel="preload" as="image" href="biosphere-logo.jpg" />
   <script type="text/javascript">
     // Single Page Apps for GitHub Pages — decode the path 404.html
     // redirected us with, and quietly swap the URL back to the clean
@@ -140,11 +149,13 @@
 
     /* ── MASONRY ── */
     .masonry { position: relative; padding: 0; margin-bottom: 0; }
-    .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
-    .masonry-item img { width: 100%; display: block; }
+    .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
+    .masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
+    .masonry-item img.loaded { opacity: 1; }
     .photo-masonry { position: relative; padding: 0; margin-bottom: 0; }
-    .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; }
-    .photo-masonry-item img { width: 100%; display: block; }
+    .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
+    .photo-masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
+    .photo-masonry-item img.loaded { opacity: 1; }
 
     /* ── VIDEO ── */
     .video-list { padding: 0 48px 80px; display: flex; flex-direction: column; gap: 80px; }
@@ -493,6 +504,12 @@ function getColumns() {
   return 3;
 }
 
+// Items whose image hasn't loaded yet get a guessed placeholder height so
+// the whole grid can be positioned and shown instantly (a "skeleton"),
+// instead of the page staying blank until several photos finish
+// downloading. Each item swaps in its real height — and fades its photo
+// in — the moment its own image loads; the CSS transition on top/left/
+// height means neighbors slide over smoothly rather than jumping.
 function layoutMasonry(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -506,8 +523,12 @@ function layoutMasonry(containerId) {
   const totalWidth = container.offsetWidth - paddingLeft - paddingRight;
   const colWidth = Math.floor((totalWidth - GAP * (cols - 1)) / cols);
   const colHeights = new Array(cols).fill(0);
+  const placeholderHeight = Math.max(80, Math.round(colWidth * 1.3));
 
   items.forEach(item => {
+    const img = item.querySelector('img');
+    const isLoaded = img && img.classList.contains('loaded');
+
     const minH = Math.min(...colHeights);
     const col = colHeights.indexOf(minH);
     const x = Math.floor(col * (colWidth + GAP));
@@ -517,60 +538,49 @@ function layoutMasonry(containerId) {
     item.style.left = x + 'px';
     item.style.top = y + 'px';
 
-    colHeights[col] += Math.floor(item.offsetHeight) + GAP;
+    let h;
+    if (isLoaded) {
+      item.style.height = '';
+      h = item.offsetHeight || placeholderHeight;
+    } else {
+      h = placeholderHeight;
+      item.style.height = h + 'px';
+    }
+
+    colHeights[col] += h + GAP;
   });
 
   container.style.height = Math.max(...colHeights) + 'px';
 }
 
-// Re-layout when images load inside a container
+// Lay the grid out immediately (skeleton, via placeholder heights above),
+// then refine it — one item at a time — as each image actually loads.
 function layoutOnLoad(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // Hide items initially to prevent flash of stacked images
-  container.style.opacity = '0';
-
   const imgs = Array.from(container.querySelectorAll('img'));
-  let loaded = 0;
-  const total = imgs.filter(img => !img.complete).length;
-
-  function onSettle() {
-    loaded++;
-    layoutMasonry(containerId);
-    // Once first few have loaded, show the grid
-    if (loaded >= Math.min(3, total)) {
-      container.style.opacity = '1';
-    }
-  }
 
   imgs.forEach(img => {
     if (img.complete && img.naturalWidth > 0) {
-      // already loaded
+      img.classList.add('loaded');
     } else if (img.complete && img.naturalWidth === 0) {
       const cell = img.closest('.photo-masonry-item, .masonry-item');
       if (cell) cell.style.display = 'none';
     } else {
-      img.addEventListener('load', () => { onSettle(); }, { once: true });
+      img.addEventListener('load', () => {
+        img.classList.add('loaded');
+        layoutMasonry(containerId);
+      }, { once: true });
       img.addEventListener('error', () => {
         const cell = img.closest('.photo-masonry-item, .masonry-item');
         if (cell) cell.style.display = 'none';
-        onSettle();
+        layoutMasonry(containerId);
       }, { once: true });
     }
   });
 
-  // If all images were already cached, show immediately
-  if (total === 0) {
-    requestAnimationFrame(() => {
-      layoutMasonry(containerId);
-      container.style.opacity = '1';
-    });
-  }
-
-  // Safety re-layouts
-  setTimeout(() => { layoutMasonry(containerId); container.style.opacity = '1'; }, 300);
-  setTimeout(() => layoutMasonry(containerId), 800);
+  layoutMasonry(containerId);
 
   // ResizeObserver catches any late dimension changes
   if (window.ResizeObserver) {
@@ -580,31 +590,37 @@ function layoutOnLoad(containerId) {
 }
 
 // ── BUILD GRIDS ──
-const isMobile = window.innerWidth <= 768;
-
+// Only the first visible row loads eagerly (at high priority); everything
+// below loads lazily as the person scrolls. The skeleton layout above
+// means every image — including lazy ones — has a real, correctly
+// computed position the instant it's created, on every device, so there's
+// no longer a reason to force mobile to load the whole grid up front.
 function makeItem(cls, src, eager) {
-  // On mobile, never use lazy loading — absolute positioning breaks viewport detection
-  const loadAttr = isMobile || eager === 'first' ? 'fetchpriority="high"' : eager ? '' : 'loading="lazy"';
+  const loadAttr = eager === 'first' ? 'fetchpriority="high" decoding="async"'
+    : eager ? 'decoding="async"'
+    : 'loading="lazy" decoding="async"';
   return `<div class="${cls}" data-src="${src}"><img src="${src}" alt="" ${loadAttr} /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
-  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, i === 0 ? 'first' : i < 6)).join('');
+  const eagerCount = getColumns();
+  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, i === 0 ? 'first' : i < eagerCount)).join('');
   layoutOnLoad(id);
 }
 function buildMasonryFor(id, images) {
-  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, i === 0 ? 'first' : i < 6)).join('');
+  const eagerCount = getColumns();
+  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, i === 0 ? 'first' : i < eagerCount)).join('');
   layoutOnLoad(id);
 }
 function buildPrintGrid(){
   document.getElementById('print-grid').innerHTML = printImages.map((p, i) =>
     p.src
-      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" ${i < 3 ? '' : 'loading="lazy"'} /></div>`
+      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" decoding="async" ${i < 3 ? '' : 'loading="lazy"'} /></div>`
       : `<div class="print-item"><div class="print-placeholder"><span class="print-placeholder-num">${p.num}</span><span class="print-placeholder-hint">Add image</span></div></div>`
   ).join('');
 }
 function buildClientsGrid(){
   document.getElementById('clients-grid').innerHTML = clientData.map(c =>
-    `<a class="client-item" href="${c.url}" target="_blank" rel="noopener" title="${c.name}"><img src="${c.file}" alt="${c.name}" loading="lazy" /><span class="client-fallback">${c.name}</span></a>`
+    `<a class="client-item" href="${c.url}" target="_blank" rel="noopener" title="${c.name}"><img src="${c.file}" alt="${c.name}" loading="lazy" decoding="async" /><span class="client-fallback">${c.name}</span></a>`
   ).join('');
 }
 
@@ -699,7 +715,18 @@ function ensurePhotoGridBuilt(name){
 }
 
 const builtVideoTabs = {};
+let videoPreconnected = false;
+function ensureVideoPreconnect(){
+  if (videoPreconnected) return;
+  videoPreconnected = true;
+  ['https://www.youtube.com', 'https://drive.google.com'].forEach(href => {
+    const link = document.createElement('link');
+    link.rel = 'preconnect'; link.href = href;
+    document.head.appendChild(link);
+  });
+}
 function ensureVideoBuilt(tab){
+  ensureVideoPreconnect();
   if (builtVideoTabs[tab]) { renderVideoList(tab); return; }
   builtVideoTabs[tab] = true;
   renderVideoList(tab);
