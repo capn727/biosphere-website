@@ -469,7 +469,7 @@ function renderVideoList(tab) {
     const attrs=isDrive?'allowfullscreen':'allowfullscreen allow="autoplay; encrypted-media"';
     const desc=v.description&&v.description.trim()?`<p class="video-text-meta">${v.description}</p>`:'';
     rows+=`<div class="video-row ${i%2===0?'text-right':'text-left'}">
-      <div class="video-embed-wrap"><iframe src="${v.embedUrl}" ${attrs}></iframe></div>
+      <div class="video-embed-wrap"><iframe src="${v.embedUrl}" loading="lazy" ${attrs}></iframe></div>
       <div class="video-text">
         <span class="video-text-num">${String(i+1).padStart(2,'0')}</span>
         <div class="video-text-divider"></div>
@@ -478,8 +478,8 @@ function renderVideoList(tab) {
   });
   const pair=videos.slice(pairStart);
   if(pair.length===2) rows+=`<div class="video-pair">
-    <div class="video-embed-wrap"><iframe src="${pair[0].embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>
-    <div class="video-embed-wrap"><iframe src="${pair[1].embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>
+    <div class="video-embed-wrap"><iframe src="${pair[0].embedUrl}" loading="lazy" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>
+    <div class="video-embed-wrap"><iframe src="${pair[1].embedUrl}" loading="lazy" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>
   </div>`;
   container.innerHTML=`<div class="video-list" style="padding-top:8px">${rows}</div>`;
 }
@@ -640,13 +640,15 @@ if (hasFineMouse) {
   });
   document.getElementById('mainNav').addEventListener('mouseenter', () => document.body.classList.remove('cursor-photo'));
 
-  // trail
+  // trail — src is assigned lazily on first movement, not up front, so
+  // these 10 frames don't cost a network request until someone actually
+  // moves the mouse on the home page.
   const trailSrcs=shuffle(['cursor/DAN_0627.jpg','cursor/DSC04460.jpg','cursor/DAN_5675.jpg','cursor/DSC07906.jpg','cursor/euan.jpg','cursor/DSC09405.jpg','cursor/DSC09718.jpg','cursor/IMG_3818.jpg','cursor/IMG_4020.jpg','cursor/mint-cover.jpg','cursor/DSC06447.jpg']);
   const TCOUNT=10,tEls=[],ROTATIONS=[-6,-3,1,4,-5,2,-2,5,-4,3];
   let tHead=0,lastT=0,tSrcIdx=0;
   for(let i=0;i<TCOUNT;i++){
     const img=document.createElement('img');
-    img.className='trail-img'; img.src=trailSrcs[i%trailSrcs.length];
+    img.className='trail-img';
     document.body.appendChild(img);
     tEls.push({el:img,x:-999,y:-999,tx:-999,ty:-999,vis:false,timer:null});
   }
@@ -672,6 +674,42 @@ if (hasFineMouse) {
     if(slot.timer)clearTimeout(slot.timer);
     slot.timer=setTimeout(()=>{slot.el.classList.remove('visible');slot.vis=false;},2200);
   });
+}
+
+// ── LAZY GRID BUILDING ──
+// Each photo/video/print/client grid is only built the first time its tab
+// is actually shown. This fixes a real bug (the JS masonry math read the
+// container's width/height while it was display:none — i.e. 0 — producing
+// a broken 0-height layout that never healed unless something else forced
+// a re-layout after the tab became visible) and means a visit that never
+// opens, say, "fashion" or "experimental" never pays for those images.
+const builtPhotoGrids = {};
+const photoGridBuilders = {
+  events: () => buildPhotoMasonry('events-masonry', eventPhotos),
+  concerts: () => buildPhotoMasonry('concerts-masonry', concertPhotos),
+  engagements: () => buildPhotoMasonry('engagements-masonry', engagementPhotos),
+  portraiture: () => buildMasonryFor('portrait-masonry', portraitImages),
+  fashion: () => buildMasonryFor('fashion-masonry', fashionImages),
+  print: () => buildPrintGrid(),
+};
+function ensurePhotoGridBuilt(name){
+  if (builtPhotoGrids[name]) return;
+  builtPhotoGrids[name] = true;
+  (photoGridBuilders[name] || (()=>{}))();
+}
+
+const builtVideoTabs = {};
+function ensureVideoBuilt(tab){
+  if (builtVideoTabs[tab]) { renderVideoList(tab); return; }
+  builtVideoTabs[tab] = true;
+  renderVideoList(tab);
+}
+
+let clientsBuilt = false;
+function ensureClientsBuilt(){
+  if (clientsBuilt) return;
+  clientsBuilt = true;
+  buildClientsGrid();
 }
 
 // ── ROUTING ──
@@ -715,13 +753,16 @@ function activatePhotoTab(name){
   const subPage = document.getElementById('photo-sub-'+name);
   if (subPage) {
     subPage.classList.add('active');
+    // Build the grid now that the container is actually visible, so the
+    // masonry math measures real dimensions instead of a hidden 0x0 box.
+    ensurePhotoGridBuilt(name);
     setTimeout(() => layoutMasonry(subPage.querySelector('.photo-masonry, .masonry')?.id), 50);
   }
 }
 
 function activateVideoTab(tab){
   document.querySelectorAll('#video-sub-nav .sub-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
-  renderVideoList(tab);
+  ensureVideoBuilt(tab);
 }
 
 // The single entry point for all navigation — swaps pages/tabs and, unless
@@ -745,6 +786,7 @@ function navigate(page, sub, opts){
     if(isHome && document.getElementById('backToTop')) {
       document.getElementById('backToTop').classList.remove('visible');
     }
+    if(page==='about') ensureClientsBuilt();
   }
 
   if(page==='photography'){
@@ -832,18 +874,12 @@ async function submitForm(){
 }
 
 // ── INIT ──
-buildPhotoMasonry('events-masonry',eventPhotos);
-buildPhotoMasonry('concerts-masonry',concertPhotos);
-buildPhotoMasonry('engagements-masonry',engagementPhotos);
-buildMasonryFor('portrait-masonry',portraitImages);
-buildMasonryFor('fashion-masonry',fashionImages);
-buildPrintGrid();
-buildClientsGrid();
-renderVideoList('documentary');
 document.body.classList.add('home-active');
 trailActive=true;
 
-// Route to whatever page the URL points at on load (deep-link support)
+// Route to whatever page the URL points at on load (deep-link support).
+// Whichever grid this lands on gets built now, as part of navigate();
+// everything else builds lazily on first visit.
 {
   const route = parsePath(location.pathname);
   currentPage = 'home';
@@ -915,12 +951,15 @@ window.addEventListener('scroll',()=>{
 }, {passive: true});
 backToTop.addEventListener('click', () => window.scrollTo({top: 0, behavior: 'smooth'}));
 
-// Re-layout masonry on window resize
+// Re-layout masonry on window resize — only the grids that have actually
+// been built so far (unbuilt ones will lay out correctly the first time
+// they're shown, via activatePhotoTab).
 let _resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
-    ['events-masonry','concerts-masonry','engagements-masonry','portrait-masonry','fashion-masonry'].forEach(layoutMasonry);
+    const idFor = {events:'events-masonry',concerts:'concerts-masonry',engagements:'engagements-masonry',portraiture:'portrait-masonry',fashion:'fashion-masonry'};
+    Object.keys(idFor).forEach(name => { if (builtPhotoGrids[name]) layoutMasonry(idFor[name]); });
   }, 100);
 }, {passive: true});
 
