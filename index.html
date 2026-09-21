@@ -16,6 +16,7 @@
   <link rel="preload" as="image" href="mission-statement.png" media="(min-width: 769px)" />
   <link rel="preload" as="image" href="mission-statement-mobile.png" media="(max-width: 768px)" />
   <link rel="preload" as="image" href="biosphere-logo.jpg" />
+  <link rel="preload" as="image" href="about.jpg" />
   <script type="text/javascript">
     // Single Page Apps for GitHub Pages — decode the path 404.html
     // redirected us with, and quietly swap the URL back to the clean
@@ -153,12 +154,12 @@
     .masonry { position: relative; padding: 0; margin-bottom: 0; }
     .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
     .masonry-item.pending { animation: placeholderPulse 1.6s ease-in-out infinite; }
-    .masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
+    .masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .2s ease; }
     .masonry-item img.loaded { opacity: 1; }
     .photo-masonry { position: relative; padding: 0; margin-bottom: 0; }
     .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
     .photo-masonry-item.pending { animation: placeholderPulse 1.6s ease-in-out infinite; }
-    .photo-masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
+    .photo-masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .2s ease; }
     .photo-masonry-item img.loaded { opacity: 1; }
 
     /* ── VIDEO ── */
@@ -602,6 +603,7 @@ function layoutOnLoad(containerId) {
       if (settled) return;
       settled = true;
       clearTimeout(stallTimer);
+      clearTimeout(retryTimer);
       img.classList.add('loaded');
       img.closest('.photo-masonry-item, .masonry-item')?.classList.remove('pending');
       layoutMasonry(containerId);
@@ -611,14 +613,15 @@ function layoutOnLoad(containerId) {
       if (settled) return;
       if (!img.dataset.retried) {
         img.dataset.retried = '1';
-        setTimeout(() => {
+        retryTimer = setTimeout(() => {
           if (settled) return;
           img.src = img.src.split('?')[0] + '?r=' + Date.now();
-        }, 600);
+        }, 200);
         return;
       }
       settled = true;
       clearTimeout(stallTimer);
+      clearTimeout(retryTimer);
       const cell = img.closest('.photo-masonry-item, .masonry-item');
       if (cell) { 
         cell.style.display = 'none'; 
@@ -631,9 +634,11 @@ function layoutOnLoad(containerId) {
     img.addEventListener('load', onLoad);
     img.addEventListener('error', onError);
 
+    let retryTimer;
     const stallTimer = setTimeout(() => {
       if (settled) return;
       settled = true;
+      clearTimeout(retryTimer);
       const cell = img.closest('.photo-masonry-item, .masonry-item');
       if (cell) { 
         cell.style.display = 'none'; 
@@ -641,7 +646,7 @@ function layoutOnLoad(containerId) {
         // Recalculate layout immediately after hiding stalled item
         setTimeout(() => layoutMasonry(containerId), 0);
       }
-    }, 10000);
+    }, 6000);
   });
 
   layoutMasonry(containerId);
@@ -654,18 +659,16 @@ function layoutOnLoad(containerId) {
 }
 
 // ── BUILD GRIDS ──
-// FIX #3: Make all images load eagerly (remove lazy loading) for photo galleries
-// so they load even when accessing a subpage directly
-function makeItem(cls, src, eager) {
-  const loadAttr = 'decoding="async"';  // Always decode async, no lazy loading
-  return `<div class="${cls} pending" data-src="${src}"><img src="${src}" alt="" ${loadAttr} /></div>`;
+// Load all gallery images eagerly (no lazy loading) for fastest display
+function makeItem(cls, src) {
+  return `<div class="${cls} pending" data-src="${src}"><img src="${src}" alt="" decoding="async" /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
-  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, true)).join('');
+  document.getElementById(id).innerHTML = photos.map((f) => makeItem('photo-masonry-item', f)).join('');
   layoutOnLoad(id);
 }
 function buildMasonryFor(id, images) {
-  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, true)).join('');
+  document.getElementById(id).innerHTML = images.map((img) => makeItem('masonry-item', img.src)).join('');
   layoutOnLoad(id);
 }
 function buildPrintGrid(){
