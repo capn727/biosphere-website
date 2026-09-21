@@ -516,7 +516,11 @@ function getColumns() {
 function layoutMasonry(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const items = Array.from(container.children);
+  let items = Array.from(container.children);
+  
+  // FIX #2: Skip hidden/failed items so they don't create blank spaces
+  items = items.filter(item => item.style.display !== 'none');
+  
   if (!items.length) return;
 
   const cols = getColumns();
@@ -635,31 +639,24 @@ function layoutOnLoad(containerId) {
 }
 
 // ── BUILD GRIDS ──
-// Only the first visible row loads eagerly (at high priority); everything
-// below loads lazily as the person scrolls. The skeleton layout above
-// means every image — including lazy ones — has a real, correctly
-// computed position the instant it's created, on every device, so there's
-// no longer a reason to force mobile to load the whole grid up front.
+// FIX #3: Make all images load eagerly (remove lazy loading) for photo galleries
+// so they load even when accessing a subpage directly
 function makeItem(cls, src, eager) {
-  const loadAttr = eager === 'first' ? 'fetchpriority="high" decoding="async"'
-    : eager ? 'decoding="async"'
-    : 'loading="lazy" decoding="async"';
+  const loadAttr = 'decoding="async"';  // Always decode async, no lazy loading
   return `<div class="${cls} pending" data-src="${src}"><img src="${src}" alt="" ${loadAttr} /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
-  const eagerCount = getColumns();
-  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, i === 0 ? 'first' : i < eagerCount)).join('');
+  document.getElementById(id).innerHTML = photos.map((f, i) => makeItem('photo-masonry-item', f, true)).join('');
   layoutOnLoad(id);
 }
 function buildMasonryFor(id, images) {
-  const eagerCount = getColumns();
-  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, i === 0 ? 'first' : i < eagerCount)).join('');
+  document.getElementById(id).innerHTML = images.map((img, i) => makeItem('masonry-item', img.src, true)).join('');
   layoutOnLoad(id);
 }
 function buildPrintGrid(){
   document.getElementById('print-grid').innerHTML = printImages.map((p, i) =>
     p.src
-      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" decoding="async" ${i < 3 ? '' : 'loading="lazy"'} /></div>`
+      ? `<div class="print-item" data-src="${p.src}"><img src="${p.src}" alt="" decoding="async" /></div>`
       : `<div class="print-item"><div class="print-placeholder"><span class="print-placeholder-num">${p.num}</span><span class="print-placeholder-hint">Add image</span></div></div>`
   ).join('');
 }
@@ -854,7 +851,13 @@ function navigate(page, sub, opts){
     const isHome=page==='home';
     document.body.classList.toggle('home-active',isHome);
     trailActive=isHome;
-    if(!isHome&&hasFineMouse) document.querySelectorAll('.trail-img').forEach(img=>img.classList.remove('visible'));
+    // FIX #1: Hide trail images immediately when leaving home
+    if(!isHome&&hasFineMouse) {
+      document.querySelectorAll('.trail-img').forEach(img=>{
+        img.classList.remove('visible');
+        img.style.opacity='0';
+      });
+    }
     if(isHome && document.getElementById('backToTop')) {
       document.getElementById('backToTop').classList.remove('visible');
     }
