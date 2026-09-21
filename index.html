@@ -94,6 +94,7 @@
         transition: opacity 2.8s ease; box-shadow: 0 12px 48px rgba(1,46,84,0.2); will-change: transform, opacity;
       }
       .trail-img.visible { opacity: 1; }
+      .trail-img.hidden-now { display: none !important; }
       body.custom-cursor-active.lightbox-open .cursor-dot { width: 10px; height: 10px; background: white; mix-blend-mode: normal; }
       body.custom-cursor-active.lightbox-open .cursor-ring { border-color: rgba(255,255,255,0.35); width: 44px; height: 44px; opacity: 1; }
     }
@@ -518,10 +519,16 @@ function layoutMasonry(containerId) {
   if (!container) return;
   let items = Array.from(container.children);
   
-  // FIX #2: Skip hidden/failed items so they don't create blank spaces
-  items = items.filter(item => item.style.display !== 'none');
+  // Skip hidden/failed items completely so they don't create blank spaces
+  items = items.filter(item => {
+    const computed = getComputedStyle(item);
+    return computed.display !== 'none' && item.style.display !== 'none';
+  });
   
-  if (!items.length) return;
+  if (!items.length) {
+    container.style.height = '0px';
+    return;
+  }
 
   const cols = getColumns();
   const style = getComputedStyle(container);
@@ -613,8 +620,12 @@ function layoutOnLoad(containerId) {
       settled = true;
       clearTimeout(stallTimer);
       const cell = img.closest('.photo-masonry-item, .masonry-item');
-      if (cell) { cell.style.display = 'none'; cell.classList.remove('pending'); }
-      layoutMasonry(containerId);
+      if (cell) { 
+        cell.style.display = 'none'; 
+        cell.classList.remove('pending');
+        // Recalculate layout immediately after hiding failed item
+        setTimeout(() => layoutMasonry(containerId), 0);
+      }
     };
 
     img.addEventListener('load', onLoad);
@@ -624,8 +635,12 @@ function layoutOnLoad(containerId) {
       if (settled) return;
       settled = true;
       const cell = img.closest('.photo-masonry-item, .masonry-item');
-      if (cell) { cell.style.display = 'none'; cell.classList.remove('pending'); }
-      layoutMasonry(containerId);
+      if (cell) { 
+        cell.style.display = 'none'; 
+        cell.classList.remove('pending');
+        // Recalculate layout immediately after hiding stalled item
+        setTimeout(() => layoutMasonry(containerId), 0);
+      }
     }, 10000);
   });
 
@@ -851,12 +866,21 @@ function navigate(page, sub, opts){
     const isHome=page==='home';
     document.body.classList.toggle('home-active',isHome);
     trailActive=isHome;
-    // FIX #1: Hide trail images immediately when leaving home
-    if(!isHome&&hasFineMouse) {
-      document.querySelectorAll('.trail-img').forEach(img=>{
-        img.classList.remove('visible');
-        img.style.opacity='0';
-      });
+    // Hide trail images immediately when leaving home
+    if(hasFineMouse) {
+      if(!isHome) {
+        // Hide and disable trail images on other pages
+        document.querySelectorAll('.trail-img').forEach(img=>{
+          img.classList.remove('visible');
+          img.classList.add('hidden-now');
+          if(img.timer) clearTimeout(img.timer);
+        });
+      } else {
+        // Reset trail images when returning to home
+        document.querySelectorAll('.trail-img').forEach(img=>{
+          img.classList.remove('hidden-now');
+        });
+      }
     }
     if(isHome && document.getElementById('backToTop')) {
       document.getElementById('backToTop').classList.remove('visible');
