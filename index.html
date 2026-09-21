@@ -148,12 +148,15 @@
     .hero-cta::after { content: '→'; font-size: 0.9rem; }
 
     /* ── MASONRY ── */
+    @keyframes placeholderPulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
     .masonry { position: relative; padding: 0; margin-bottom: 0; }
     .masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
+    .masonry-item.pending { animation: placeholderPulse 1.6s ease-in-out infinite; }
     .masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
     .masonry-item img.loaded { opacity: 1; }
     .photo-masonry { position: relative; padding: 0; margin-bottom: 0; }
     .photo-masonry-item { position: absolute; overflow: hidden; background: var(--cream); cursor: pointer; transition: top .4s ease, left .4s ease, height .4s ease; }
+    .photo-masonry-item.pending { animation: placeholderPulse 1.6s ease-in-out infinite; }
     .photo-masonry-item img { width: 100%; display: block; opacity: 0; transition: opacity .45s ease; }
     .photo-masonry-item img.loaded { opacity: 1; }
 
@@ -555,6 +558,15 @@ function layoutMasonry(containerId) {
 
 // Lay the grid out immediately (skeleton, via placeholder heights above),
 // then refine it — one item at a time — as each image actually loads.
+//
+// Two safety nets so a photo can never sit blank forever:
+//  1. A failed load gets one retry (cache-busted) before giving up, since
+//     a lot of "broken" images on real networks are just a dropped
+//     connection or a momentary blip, not a genuinely missing file.
+//  2. If an image fires neither load nor error within 10s — which does
+//     happen on flaky mobile connections, a stalled request that never
+//     resolves either way — a timeout steps in and hides it, so nothing
+//     is left as a permanent empty box.
 function layoutOnLoad(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -564,20 +576,53 @@ function layoutOnLoad(containerId) {
   imgs.forEach(img => {
     if (img.complete && img.naturalWidth > 0) {
       img.classList.add('loaded');
-    } else if (img.complete && img.naturalWidth === 0) {
-      const cell = img.closest('.photo-masonry-item, .masonry-item');
-      if (cell) cell.style.display = 'none';
-    } else {
-      img.addEventListener('load', () => {
-        img.classList.add('loaded');
-        layoutMasonry(containerId);
-      }, { once: true });
-      img.addEventListener('error', () => {
-        const cell = img.closest('.photo-masonry-item, .masonry-item');
-        if (cell) cell.style.display = 'none';
-        layoutMasonry(containerId);
-      }, { once: true });
+      img.closest('.photo-masonry-item, .masonry-item')?.classList.remove('pending');
+      return;
     }
+    if (img.complete && img.naturalWidth === 0) {
+      const cell = img.closest('.photo-masonry-item, .masonry-item');
+      if (cell) { cell.style.display = 'none'; cell.classList.remove('pending'); }
+      return;
+    }
+
+    let settled = false;
+
+    const onLoad = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(stallTimer);
+      img.classList.add('loaded');
+      img.closest('.photo-masonry-item, .masonry-item')?.classList.remove('pending');
+      layoutMasonry(containerId);
+    };
+
+    const onError = () => {
+      if (settled) return;
+      if (!img.dataset.retried) {
+        img.dataset.retried = '1';
+        setTimeout(() => {
+          if (settled) return;
+          img.src = img.src.split('?')[0] + '?r=' + Date.now();
+        }, 600);
+        return;
+      }
+      settled = true;
+      clearTimeout(stallTimer);
+      const cell = img.closest('.photo-masonry-item, .masonry-item');
+      if (cell) { cell.style.display = 'none'; cell.classList.remove('pending'); }
+      layoutMasonry(containerId);
+    };
+
+    img.addEventListener('load', onLoad);
+    img.addEventListener('error', onError);
+
+    const stallTimer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const cell = img.closest('.photo-masonry-item, .masonry-item');
+      if (cell) { cell.style.display = 'none'; cell.classList.remove('pending'); }
+      layoutMasonry(containerId);
+    }, 10000);
   });
 
   layoutMasonry(containerId);
@@ -599,7 +644,7 @@ function makeItem(cls, src, eager) {
   const loadAttr = eager === 'first' ? 'fetchpriority="high" decoding="async"'
     : eager ? 'decoding="async"'
     : 'loading="lazy" decoding="async"';
-  return `<div class="${cls}" data-src="${src}"><img src="${src}" alt="" ${loadAttr} /></div>`;
+  return `<div class="${cls} pending" data-src="${src}"><img src="${src}" alt="" ${loadAttr} /></div>`;
 }
 function buildPhotoMasonry(id, photos) {
   const eagerCount = getColumns();
